@@ -10,8 +10,10 @@ namespace Common.Behaviors
         void DismissPopup();
     }
 
-    public class PopupBehavior : Behavior<Page>, IPopupController
+    public class PopupBehavior : Behavior<ContentPage>, IPopupController
     {
+        private const string ContentPropertyName = "Content";
+
         private static readonly BindablePropertyKey PopupControllerPropertyKey =
             BindableProperty.CreateReadOnly<PopupBehavior, IPopupController>(
                 popupBehavior => popupBehavior.PopupController,
@@ -23,6 +25,8 @@ namespace Common.Behaviors
             PopupControllerPropertyKey.BindableProperty;
 
         private readonly PopupLayout popupLayout;
+
+        private bool initialized;
 
         public PopupBehavior()
         {
@@ -48,25 +52,29 @@ namespace Common.Behaviors
             popupLayout.DismissPopup();
         }
 
-        protected override void OnAttachedTo(Page bindable)
+        protected override void OnAttachedTo(ContentPage bindable)
         {
             base.OnAttachedTo(bindable);
             this.BindingContext = bindable.BindingContext;
-            bindable.Appearing += OnPageAppearing;
+            bindable.PropertyChanged += OnPropertyChanged;
         }
 
-        protected override void OnDetachingFrom(Page bindable)
+        protected override void OnDetachingFrom(ContentPage bindable)
         {
             base.OnDetachingFrom(bindable);
             this.BindingContext = null;
-            bindable.Appearing -= OnPageAppearing;
+            bindable.PropertyChanged -= OnPropertyChanged;
         }
-
-        private void OnPageAppearing(object sender, EventArgs e)
+		
+		private void OnPropertyChanged(object sender, System.ComponentModel.PropertyChangedEventArgs e)
         {
-            var page = (ContentPage) sender;
-            popupLayout.Content = page.Content;
-            page.Content = popupLayout;
+            if (initialized == false && string.Equals(e.PropertyName, ContentPropertyName, StringComparison.OrdinalIgnoreCase))
+            {
+                initialized = true;
+                var page = (ContentPage)sender;
+                popupLayout.Content = page.Content;
+                page.Content = popupLayout;
+            }
         }
     }
 }
